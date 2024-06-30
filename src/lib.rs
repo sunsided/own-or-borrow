@@ -318,6 +318,14 @@ mod tests {
     }
 
     #[test]
+    fn deref_refcell() {
+        let value = RefCell::new(42);
+        let mut value = OwnOrBorrow::from(value);
+        assert_eq!(value.borrow().deref(), &42);
+        assert_eq!(value.borrow_mut().deref_mut(), &mut 42);
+    }
+
+    #[test]
     fn debug() {
         let value = RefCell::new(42);
         let value = OwnOrBorrow::from(value);
@@ -330,5 +338,58 @@ mod tests {
         let value = RefCell::new(42);
         let value = OwnOrBorrow::from(value);
         assert_eq!(format!("{}", value), "42");
+    }
+
+    #[test]
+    fn try_into_owned() {
+        let value = OwnOrBorrow::own(42);
+        let value = value
+            .try_into_owned()
+            .expect("failed to unwrap owned value");
+        assert_eq!(value, 42)
+    }
+
+    #[test]
+    fn try_into_owned_from_refcell_fails() {
+        let value = RefCell::new(42);
+        let value = OwnOrBorrow::from(value);
+        value.try_into_owned().expect_err("failed to fail");
+    }
+
+    #[test]
+    fn try_into_owned_from_refcell_ref_fails() {
+        let value = RefCell::new(42);
+        let value = OwnOrBorrow::from(&value);
+        value.try_into_owned().expect_err("failed to fail");
+    }
+
+    #[test]
+    fn try_into_from_refcell() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(cell);
+        let _value: RefCell<i32> = value.try_into().expect("failed to unwrap owned value");
+    }
+
+    #[test]
+    fn try_into_from_refcell_ref() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(&cell);
+        let _value: &RefCell<i32> = value.try_into().expect("failed to unwrap owned value");
+    }
+
+    #[test]
+    fn try_into_from_refcell_fails_for_refcell_ref() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(&cell);
+        <OwnOrBorrow<'_, i32> as TryInto<RefCell<i32>>>::try_into(value)
+            .expect_err("failed to fail");
+    }
+
+    #[test]
+    fn try_into_from_refcell_ref_fails_for_refcell() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(cell);
+        <OwnOrBorrow<'_, i32> as TryInto<&RefCell<i32>>>::try_into(value)
+            .expect_err("failed to fail");
     }
 }
