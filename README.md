@@ -1,6 +1,9 @@
 # Own or borrow your data.
 
+[![Crates.io](https://img.shields.io/crates/v/own-or-borrow)](https://crates.io/crates/own-or-borrow)
+[![Crates.io](https://img.shields.io/crates/l/own-or-borrow)](https://crates.io/crates/own-or-borrow)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/own-or-borrow/rust.yml)
+[![docs.rs](https://img.shields.io/docsrs/own-or-borrow)](https://docs.rs/own-or-borrow/)
 [![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
 
 This crate provides the `OwnOrBorrow` type that wraps either owned data or a `RefCell`
