@@ -258,18 +258,18 @@ impl<'a, T> core::fmt::Debug for OwnOrBorrow<'a, T>
 where
     T: core::fmt::Debug,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let data = self.borrow();
         let data = data.as_ref();
         core::fmt::Debug::fmt(data, f)
     }
 }
 
-impl<'a, T> std::fmt::Display for OwnOrBorrow<'a, T>
+impl<'a, T> core::fmt::Display for OwnOrBorrow<'a, T>
 where
-    T: std::fmt::Display,
+    T: core::fmt::Display,
 {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let data = self.borrow();
         let data = data.as_ref();
         core::fmt::Display::fmt(data, f)
