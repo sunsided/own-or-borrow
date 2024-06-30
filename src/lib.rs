@@ -316,4 +316,19 @@ mod tests {
         assert_eq!(value.borrow().as_ref(), &42);
         assert_eq!(value.borrow_mut().as_mut(), &mut 42);
     }
+
+    #[test]
+    fn debug() {
+        let value = RefCell::new(42);
+        let value = OwnOrBorrow::from(value);
+        assert_eq!(format!("{:?}", value), "42");
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn display() {
+        let value = RefCell::new(42);
+        let value = OwnOrBorrow::from(value);
+        assert_eq!(format!("{}", value), "42");
+    }
 }
