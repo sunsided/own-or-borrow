@@ -326,6 +326,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn debug() {
         let value = RefCell::new(42);
         let value = OwnOrBorrow::from(value);
