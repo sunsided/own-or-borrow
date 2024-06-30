@@ -3,9 +3,13 @@
 //! This crate provides the [`OwnOrBorrow`] type that wraps either owned data or a [`RefCell`]
 //! borrowed reference to it. Think `Cow` for borrowing.
 //!
-//! ## `no_std`
+//! ## `no_std` vs. `std`
 //!
 //! To use the crate in a `no_std` context, disable the `std` feature.
+//!
+//! ## Crate features
+//! * `std` - Enables `std`; disabling enters `no_std` mode.
+//! * `defmt` - Enables deferred formatting support via the [defmt](https://crates.io/crates/defmt) crate.
 //!
 //! ## Examples
 //!
@@ -247,6 +251,41 @@ impl<'a, T> TryInto<&'a RefCell<T>> for OwnOrBorrow<'a, T> {
             OwnOrBorrow::RefCell(_) => Err(TryIntoError::NotConvertible),
             OwnOrBorrow::RefCellRef(cell) => Ok(cell),
         }
+    }
+}
+
+impl<'a, T> core::fmt::Debug for OwnOrBorrow<'a, T>
+where
+    T: core::fmt::Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        let data = self.borrow();
+        let data = data.as_ref();
+        core::fmt::Debug::fmt(data, f)
+    }
+}
+
+impl<'a, T> std::fmt::Display for OwnOrBorrow<'a, T>
+where
+    T: std::fmt::Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> std::fmt::Result {
+        let data = self.borrow();
+        let data = data.as_ref();
+        core::fmt::Display::fmt(data, f)
+    }
+}
+
+#[cfg(feature = "defmt")]
+#[cfg_attr(docsrs, doc(cfg(feature = "defmt")))]
+impl<'a, T> defmt::Format for OwnOrBorrow<'a, T>
+where
+    T: defmt::Format,
+{
+    fn format(&self, fmt: defmt::Formatter) {
+        let data = self.borrow();
+        let data = data.as_ref();
+        defmt::Format::format(data, fmt)
     }
 }
 

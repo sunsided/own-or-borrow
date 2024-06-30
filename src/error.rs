@@ -18,3 +18,13 @@ impl Display for TryIntoError {
         }
     }
 }
+
+#[cfg(feature = "defmt")]
+#[cfg_attr(docsrs, doc(cfg(feature = "defmt")))]
+impl defmt::Format for TryIntoError {
+    fn format(&self, fmt: defmt::Formatter) {
+        match self {
+            TryIntoError::NotConvertible => defmt::write!(fmt, "Invalid Type"),
+        }
+    }
+}
