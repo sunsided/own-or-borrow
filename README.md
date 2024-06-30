@@ -1,5 +1,8 @@
 # Own or borrow your data.
 
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/own-or-borrow/rust.yml)
+[![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
+
 This crate provides the `OwnOrBorrow` type that wraps either owned data or a `RefCell`
 borrowed reference to it. Think `Cow` for borrowing.
 
