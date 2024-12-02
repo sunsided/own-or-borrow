@@ -16,7 +16,7 @@ std = []
 defmt = ["dep:defmt"]
 
 [dependencies]
-defmt = { version = "0.3.8", optional = true }
+defmt = { version = "0.3.10", optional = true }
 
 [package.metadata.docs.rs]
 all-features = true
