@@ -2,7 +2,7 @@
 name = "own_or_borrow"
 description = "Unified references to owned or RefCell borrowed data"
 authors = ["Markus Mayer <widemeadow@gmail.com>"]
-version = "0.1.0"
+version = "0.1.1"
 categories = ["no-std", "no-std::no-alloc", "embedded"]
 keywords = ["refcell", "embedded"]
 homepage = "https://github.com/sunsided/own-or-borrow"
