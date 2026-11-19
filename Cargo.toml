@@ -4,11 +4,14 @@ description = "Unified references to owned, mutably borrowed or RefCell borrowed
 authors = ["Markus Mayer <widemeadows@gmail.com>"]
 version = "0.3.0"
 categories = ["no-std", "no-std::no-alloc", "embedded"]
-keywords = ["refcell", "embedded"]
+keywords = ["refcell", "borrow", "cow", "no-std", "embedded"]
 repository = "https://github.com/sunsided/own-or-borrow"
 license = "EUPL-1.2 OR MPL-2.0"
 edition = "2024"
 rust-version = "1.85"
+readme = "README.md"
+# Only what users of the crate need; CI, hooks and review config stay in the repo.
+include = ["src/**", "tests/**", "LICENSES/*", "README.md", "CHANGELOG.md"]
 
 [features]
 default = ["std"]
@@ -30,5 +33,20 @@ serde_json = "1.0.145"
 all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "forbid"
+
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
+mod_module_files = "deny"
+missing_docs_in_private_items = "warn"
+allow_attributes = "warn"
+allow_attributes_without_reason = "warn"
+undocumented_unsafe_blocks = "warn"
+multiple_unsafe_ops_per_block = "warn"
+cognitive_complexity = "warn"
+
+[lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "allow"

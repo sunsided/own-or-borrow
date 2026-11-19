@@ -1,11 +1,12 @@
 # Own or borrow your data.
 
-[![Crates.io](https://img.shields.io/crates/v/own-or-borrow)](https://crates.io/crates/own-or-borrow)
-[![Crates.io](https://img.shields.io/crates/l/own-or-borrow)](https://crates.io/crates/own-or-borrow)
-![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/own-or-borrow/rust.yml)
-[![docs.rs](https://img.shields.io/docsrs/own_or_borrow)](https://docs.rs/own-or-borrow/)
-[![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
-[![Safety Dance](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
+[![crates.io](https://img.shields.io/crates/v/own_or_borrow.svg)](https://crates.io/crates/own_or_borrow)
+[![docs.rs](https://img.shields.io/docsrs/own_or_borrow)](https://docs.rs/own_or_borrow)
+[![CI](https://github.com/sunsided/own-or-borrow/actions/workflows/ci.yml/badge.svg)](https://github.com/sunsided/own-or-borrow/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg)](https://codecov.io/gh/sunsided/own-or-borrow)
+[![MSRV](https://img.shields.io/crates/msrv/own_or_borrow)](https://crates.io/crates/own_or_borrow)
+[![License](https://img.shields.io/crates/l/own_or_borrow)](https://github.com/sunsided/own-or-borrow#license)
+[![unsafe forbidden](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
 The `own-or-borrow` crate provides the `OwnOrBorrow` type. It holds an owned value, a `&mut T`, an owned
 `RefCell<T>` or a `&RefCell<T>`, and gives the same read and write access to all four. It works in `no_std`
@@ -106,7 +107,10 @@ Disable default features for `no_std`. The crate needs no `alloc` and requires R
 
 Licensed under either of
 
-* European Union Public Licence 1.2 ([LICENSE-EUPL.md](LICENSE-EUPL.md))
-* Mozilla Public License 2.0 ([LICENSE-MPL](LICENSE-MPL))
+* European Union Public Licence 1.2 ([LICENSES/EUPL-1.2.txt](https://github.com/sunsided/own-or-borrow/blob/main/LICENSES/EUPL-1.2.txt))
+* Mozilla Public License 2.0 ([LICENSES/MPL-2.0.txt](https://github.com/sunsided/own-or-borrow/blob/main/LICENSES/MPL-2.0.txt))
 
 at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
+in this work by you shall be dual licensed as above, without any additional terms or conditions.
