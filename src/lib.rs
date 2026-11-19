@@ -208,28 +208,25 @@ impl<'a, T> From<&'a RefCell<T>> for OwnOrBorrow<'a, T> {
     }
 }
 
-// `TryFrom` cannot be implemented here due to the orphan rule (`RefCell<T>` is foreign).
-#[allow(clippy::from_over_into)]
-impl<'a, T> TryInto<RefCell<T>> for OwnOrBorrow<'a, T> {
+impl<'a, T> TryFrom<OwnOrBorrow<'a, T>> for RefCell<T> {
     /// The unchanged input.
-    type Error = Self;
+    type Error = OwnOrBorrow<'a, T>;
 
-    fn try_into(self) -> Result<RefCell<T>, Self::Error> {
-        match self {
-            Self::RefCell(cell) => Ok(cell),
+    fn try_from(value: OwnOrBorrow<'a, T>) -> Result<Self, Self::Error> {
+        match value {
+            OwnOrBorrow::RefCell(cell) => Ok(cell),
             other => Err(other),
         }
     }
 }
 
-#[allow(clippy::from_over_into)]
-impl<'a, T> TryInto<&'a RefCell<T>> for OwnOrBorrow<'a, T> {
+impl<'a, T> TryFrom<OwnOrBorrow<'a, T>> for &'a RefCell<T> {
     /// The unchanged input.
-    type Error = Self;
+    type Error = OwnOrBorrow<'a, T>;
 
-    fn try_into(self) -> Result<&'a RefCell<T>, Self::Error> {
-        match self {
-            Self::RefCellRef(cell) => Ok(cell),
+    fn try_from(value: OwnOrBorrow<'a, T>) -> Result<Self, Self::Error> {
+        match value {
+            OwnOrBorrow::RefCellRef(cell) => Ok(cell),
             other => Err(other),
         }
     }
@@ -545,6 +542,8 @@ mod tests {
     fn try_into_from_refcell() {
         let value = OwnOrBorrow::from(RefCell::new(42));
         let _value: RefCell<i32> = value.try_into().expect("failed to unwrap refcell");
+        let value = OwnOrBorrow::from(RefCell::new(42));
+        let _value = RefCell::<i32>::try_from(value).expect("failed to unwrap refcell");
     }
 
     #[test]

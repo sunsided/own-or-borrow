@@ -20,8 +20,10 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - [**breaking**] `borrow` and `borrow_mut` no longer borrow `self` for the lifetime `'a`.
   Previously, `borrow_mut` could only be called once on a value created from a `&RefCell`.
-- [**breaking**] `try_into_owned` and the `TryInto` implementations return the unchanged
+- [**breaking**] `try_into_owned` and the `RefCell` conversions return the unchanged
   `OwnOrBorrow` as the error, so the value is no longer lost on failure.
+- The `RefCell` and `&RefCell` conversions are now `TryFrom` implementations, so
+  `RefCell::try_from` works too. `try_into` keeps working through the standard blanket impl.
 - [**breaking**] `try_into_owned` now succeeds for the owned `RefCell` variant.
 - [**breaking**] Removed `TryIntoError`.
 - [**breaking**] Removed the never-constructed `Reference::RefCellRef` and `ReferenceMut::RefCellRef` variants.
