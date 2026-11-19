@@ -1,7 +1,7 @@
 [package]
 name = "own_or_borrow"
 description = "Unified references to owned, mutably borrowed or RefCell borrowed data"
-authors = ["Markus Mayer <widemeadow@gmail.com>"]
+authors = ["Markus Mayer <widemeadows@gmail.com>"]
 version = "0.2.0"
 categories = ["no-std", "no-std::no-alloc", "embedded"]
 keywords = ["refcell", "embedded"]
