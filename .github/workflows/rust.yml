@@ -106,7 +106,7 @@ jobs:
       - name: Generate code coverage
         run: cargo llvm-cov nextest --features std,serde,embedded-io --lcov --output-path lcov.info
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4.0.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: lcov.info
