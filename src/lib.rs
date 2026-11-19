@@ -577,5 +577,58 @@ mod tests {
         assert!(a < b);
         assert_ne!(a, b);
         assert_eq!(a, Reference::from(&1));
+        assert_eq!(a.cmp(&b), Ordering::Less);
+    }
+
+    #[test]
+    fn reference_hash_matches_value() {
+        use core::hash::BuildHasher;
+        let hasher = std::hash::RandomState::new();
+        assert_eq!(hasher.hash_one(Reference::from(&42)), hasher.hash_one(42));
+    }
+
+    #[test]
+    fn try_borrow_all_variants() {
+        let cell = RefCell::new(4);
+        let mut target = 3;
+        let mut values = [
+            OwnOrBorrow::own(1),
+            OwnOrBorrow::from(RefCell::new(2)),
+            OwnOrBorrow::from(&mut target),
+            OwnOrBorrow::from(&cell),
+        ];
+        for (expected, value) in (1..).zip(values.iter_mut()) {
+            assert_eq!(*value.try_borrow().unwrap(), expected);
+            *value.try_borrow_mut().unwrap() *= 10;
+            assert_eq!(*value.borrow(), expected * 10);
+        }
+        assert_eq!(*cell.borrow(), 40);
+    }
+
+    #[test]
+    fn into_owned_owned_variants() {
+        assert_eq!(OwnOrBorrow::own(1).into_owned(), 1);
+        assert_eq!(OwnOrBorrow::from(RefCell::new(2)).into_owned(), 2);
+    }
+
+    #[test]
+    fn reference_traits() {
+        use core::borrow::{Borrow, BorrowMut};
+        let cell = RefCell::new(42);
+        let reference = Reference::from(cell.borrow());
+        assert_eq!(*Borrow::<i32>::borrow(&reference), 42);
+        assert_eq!(format!("{:?}", reference), "42");
+        drop(reference);
+
+        let mut reference = ReferenceMut::from(cell.borrow_mut());
+        *BorrowMut::<i32>::borrow_mut(&mut reference) += 1;
+        assert_eq!(*Borrow::<i32>::borrow(&reference), 43);
+        assert_eq!(reference.as_ref(), &43);
+        assert_eq!(format!("{:?} {}", reference, reference), "43 43");
+        drop(reference);
+
+        let mut value = 7;
+        let reference = ReferenceMut::from(&mut value);
+        assert_eq!(*reference, 7);
     }
 }
