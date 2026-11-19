@@ -19,5 +19,7 @@ applyTo: "Cargo.toml,release-plz.toml,.github/workflows/release-plz.yml,.github/
   `publish-crates-io.yml` publishes from the tag in the `crates-io` environment, via trusted
   publishing (`id-token: write`, no `CARGO_REGISTRY_TOKEN`). Keep it that way.
 - Changelog groups come from imperative subject verbs (`release-plz.toml`). While the crate is
-  0.x, compatible changes are patch releases; only API breaks bump the minor.
+  0.x, compatible changes are patch releases. API breaks found by cargo-semver-checks and a
+  `BREAKING CHANGE:` line in the commit body bump the minor. Flag a behavior break (like a
+  changed method resolution) that has no such line.
   A subject that hides a feature behind "Update ..." lands under Changed. Flag it.
