@@ -6,7 +6,7 @@
 [![docs.rs](https://img.shields.io/docsrs/own_or_borrow)](https://docs.rs/own-or-borrow/)
 [![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
 
-The `own-or-borrow` crate provides the `OwnOrBorrow` type, which can encapsulate either owned data or a `RefCell`-borrowed reference,
+The `own-or-borrow` crate provides the `OwnOrBorrow` type, which can encapsulate owned data, a mutable reference, or a `RefCell`-borrowed reference,
 offering a flexible approach to data ownership and borrowing. This design is particularly useful in `no_std` environments,
 as it allows for dynamic borrowing without relying on the standard library.
 
@@ -46,9 +46,29 @@ use core::cell::RefCell;
 
 fn example() {
     let refcell = RefCell::new(42);
-    let mut value = OwnOrBorrow::from(refcell);
+    let mut value = OwnOrBorrow::from(&refcell);
 
-    assert_eq!(value.borrow().as_ref(), &42);
-    assert_eq!(value.borrow_mut().as_mut(), &mut 42);
+    *value.borrow_mut() += 1;
+    assert_eq!(*refcell.borrow(), 43);
 }
 ```
+
+Use `try_borrow` and `try_borrow_mut` to avoid panicking when the `RefCell` is already borrowed.
+
+## Compared to `mayber`
+
+[`mayber`](https://crates.io/crates/mayber) generalizes `Cow` to `Maybe<R, T>` (borrowed `R` or owned `T`)
+without requiring `ToOwned`. It has no `RefCell` support. `own-or-borrow` focuses on mutable access
+that works the same for owned values, `&mut` references and shared `RefCell`s.
+
+## Crate features
+
+* `std` (default): `std::io::{Read, Write, Seek}` for `OwnOrBorrow`. A `RefCell` that is
+  already borrowed yields an `ErrorKind::ResourceBusy` error.
+* `embedded-io`: `embedded_io::{Read, Write, Seek}` (embedded-io 0.7). These panic if the
+  `RefCell` is already borrowed, because the inner error type cannot express that.
+* `serde`: `Serialize` and `Deserialize`. Serializing fails if the `RefCell` is mutably
+  borrowed; deserializing always yields an owned value.
+* `defmt`: `defmt::Format`.
+
+Disable default features for `no_std`. The crate needs no `alloc` and requires Rust 1.85 or later.
