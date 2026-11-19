@@ -106,7 +106,10 @@ Disable default features for `no_std`. The crate needs no `alloc` and requires R
 
 Licensed under either of
 
-* European Union Public Licence 1.2 ([LICENSE-EUPL.md](LICENSE-EUPL.md))
-* Mozilla Public License 2.0 ([LICENSE-MPL](LICENSE-MPL))
+* European Union Public Licence 1.2 ([LICENSES/EUPL-1.2.txt](https://github.com/sunsided/own-or-borrow/blob/main/LICENSES/EUPL-1.2.txt))
+* Mozilla Public License 2.0 ([LICENSES/MPL-2.0.txt](https://github.com/sunsided/own-or-borrow/blob/main/LICENSES/MPL-2.0.txt))
 
 at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted for inclusion
+in this work by you shall be dual licensed as above, without any additional terms or conditions.
