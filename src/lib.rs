@@ -303,12 +303,17 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for OwnOrBorrow<'_
     }
 }
 
+/// `std::io` impls for [`OwnOrBorrow`] and [`ReferenceMut`].
 #[cfg(feature = "std")]
 mod std_io {
     use super::{OwnOrBorrow, ReferenceMut};
     use std::io::{BufRead, Error, ErrorKind, Read, Result, Seek, SeekFrom, Write};
 
     impl<T> OwnOrBorrow<'_, T> {
+        /// Borrows the inner value mutably for one I/O call.
+        ///
+        /// A [`RefCell`](core::cell::RefCell) that is already borrowed becomes an
+        /// [`ErrorKind::ResourceBusy`] error instead of a panic, since `std::io` can report it.
         fn io(&mut self) -> Result<ReferenceMut<'_, T>> {
             self.try_borrow_mut()
                 .map_err(|e| Error::new(ErrorKind::ResourceBusy, e))
@@ -385,6 +390,10 @@ mod std_io {
     }
 }
 
+/// `embedded_io` impls for [`OwnOrBorrow`] and [`ReferenceMut`].
+///
+/// The [`OwnOrBorrow`] impls panic on a borrow conflict, because the inner error type cannot
+/// express it. The [`ReferenceMut`] impls cannot conflict, since the guard holds the borrow.
 #[cfg(feature = "embedded-io")]
 mod embedded_io_impls {
     use super::{OwnOrBorrow, ReferenceMut};
