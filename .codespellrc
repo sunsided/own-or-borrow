@@ -1,3 +1,0 @@
-[codespell]
-ignore-words-list = crate,ser
-skip = .git,*.lock
