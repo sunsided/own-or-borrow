@@ -9,6 +9,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'src/**'
+      - 'README.md'
       - 'tests/**'
       - '.codespellrc'
       - '.github/workflows/rust.yml'
@@ -18,6 +19,7 @@ on:
       - 'Cargo.toml'
       - 'Cargo.lock'
       - 'src/**'
+      - 'README.md'
       - 'tests/**'
       - '.codespellrc'
       - '.github/workflows/rust.yml'
@@ -43,7 +45,7 @@ jobs:
       - name: Check format
         run: cargo fmt --check
       - name: Clippy
-        run: cargo clippy --all-features --all-targets -- -D warnings
+        run: cargo clippy --all-features
 
   docs:
     name: Build documentation

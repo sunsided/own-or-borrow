@@ -382,6 +382,11 @@ mod embedded_io_impls {
     }
 }
 
+/// Compiles and runs the README examples as doctests.
+#[cfg(doctest)]
+#[doc = include_str!("../README.md")]
+pub struct ReadmeDoctests;
+
 impl<T> Deref for Reference<'_, T> {
     type Target = T;
 

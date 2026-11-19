@@ -30,12 +30,10 @@ You can create an `OwnOrBorrow` from an owned value:
 ```rust
 use own_or_borrow::OwnOrBorrow;
 
-fn example() {
-    let mut value = OwnOrBorrow::own(42);
+let mut value = OwnOrBorrow::own(42);
 
-    assert_eq!(value.borrow().as_ref(), &42);
-    assert_eq!(value.borrow_mut().as_mut(), &mut 42);
-}
+assert_eq!(value.borrow().as_ref(), &42);
+assert_eq!(value.borrow_mut().as_mut(), &mut 42);
 ```
 
 You can create an `OwnOrBorrow` from a `RefCell` and treat it the same way:
@@ -44,13 +42,11 @@ You can create an `OwnOrBorrow` from a `RefCell` and treat it the same way:
 use own_or_borrow::OwnOrBorrow;
 use core::cell::RefCell;
 
-fn example() {
-    let refcell = RefCell::new(42);
-    let mut value = OwnOrBorrow::from(&refcell);
+let refcell = RefCell::new(42);
+let mut value = OwnOrBorrow::from(&refcell);
 
-    *value.borrow_mut() += 1;
-    assert_eq!(*refcell.borrow(), 43);
-}
+*value.borrow_mut() += 1;
+assert_eq!(*refcell.borrow(), 43);
 ```
 
 Use `try_borrow` and `try_borrow_mut` to avoid panicking when the `RefCell` is already borrowed.
