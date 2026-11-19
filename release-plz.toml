@@ -12,6 +12,9 @@ git_release_enable = true
 git_release_type = "auto"
 # Release PR branches follow the branching model (release/*), not the default `release-plz-`.
 pr_branch_prefix = "release/"
+# Imperative PR title, so the squash-merged subject matches the commit style and the
+# changelog's "^Release" skip rule (the default is "chore: release v{{ version }}").
+pr_name = "Release {{ version }}"
 # While the crate is 0.x, the minor number is the breaking position: "Add ..." commits stay patch
 # releases, and an explicit breaking marker bumps the minor (a major regex would release 1.0.0).
 # cargo-semver-checks also forces 0.x+1 for API breaks it detects. At 1.0, switch to
