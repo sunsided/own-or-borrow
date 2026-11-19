@@ -1,4 +1,4 @@
-# Lints the workflows themselves. Action refs are tags here; pin with scripts/pin-actions.py.
+# Lints the workflows themselves. Actions are pinned to commit SHAs; Dependabot keeps them current.
 name: GitHub Actions lint
 
 # No path filters: a path-filtered workflow cannot be a required status check.

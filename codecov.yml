@@ -11,7 +11,3 @@ coverage:
 comment:
   layout: "condensed_header, diff, flags, files"
   require_changes: true
-
-ignore:
-  - "**/benches/**"
-  - "**/examples/**"

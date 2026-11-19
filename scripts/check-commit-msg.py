@@ -52,6 +52,9 @@ def subject_problems(subject):
 
 def main():
     """Entry point."""
+    if len(sys.argv) != 2:
+        sys.exit("usage: check-commit-msg.py <commit-message-file>")
+
     with open(sys.argv[1], encoding="utf-8") as handle:
         lines = [line.rstrip("\n") for line in handle if not line.startswith("#")]
 

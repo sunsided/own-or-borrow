@@ -6,7 +6,7 @@ applyTo: ".github/workflows/**,Taskfile.dist.yaml,.pre-commit-config.yaml,codeco
 
 - The `ci` task in `Taskfile.dist.yaml` mirrors the jobs in `.github/workflows/ci.yml`:
   `branch name`, `rustfmt`, `clippy`, `style`, `rustdoc`, `test`, `cargo-deny` and `MSRV`.
-  `coverage` and `semver` are CI-only. A change that adds, removes or renames a CI job, or
+  `coverage` and `semver` have their own tasks but are not part of `task ci`. A change that adds, removes or renames a CI job, or
   changes its flags, must make the same change to the matching task, and the other way round.
 - The feature sets are defined twice: `FEATURE_SETS` in the Taskfile and the `features`
   matrix of the `clippy` and `test` jobs. Keep them identical.

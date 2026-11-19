@@ -27,8 +27,9 @@ needs before it can be merged.
 | `task lint` | clippy (pedantic), separator ban, README link check, typos, workflow lints |
 | `task fmt` | Format the code |
 | `task doc` | Build the docs, private items included, with warnings as errors |
-| `task ci` | Everything CI runs. Run it before you open a PR |
+| `task ci` | Every CI check except coverage and semver. Run it before you open a PR |
 | `task coverage` | Coverage report (`lcov.info`), without `defmt` |
+| `task semver` | cargo-semver-checks against the last release |
 | `task clean` | Remove build output |
 
 ## Code style
