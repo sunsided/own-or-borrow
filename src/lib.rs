@@ -186,7 +186,7 @@ impl<'a, T> OwnOrBorrow<'a, T> {
     where
         T: Clone,
     {
-        self.borrow().clone()
+        T::clone(&self.borrow())
     }
 }
 
@@ -296,7 +296,7 @@ impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for OwnOrBorrow<'_
 #[cfg(feature = "std")]
 mod std_io {
     use super::{OwnOrBorrow, ReferenceMut};
-    use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom, Write};
+    use std::io::{BufRead, Error, ErrorKind, Read, Result, Seek, SeekFrom, Write};
 
     impl<T> OwnOrBorrow<'_, T> {
         fn io(&mut self) -> Result<ReferenceMut<'_, T>> {
@@ -335,12 +335,50 @@ mod std_io {
             self.io()?.seek(pos)
         }
     }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Read> Read for ReferenceMut<'_, T> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            (**self).read(buf)
+        }
+    }
+
+    /// Unlike on [`OwnOrBorrow`], this works because the guard keeps the borrow alive
+    /// as long as the returned buffer.
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: BufRead> BufRead for ReferenceMut<'_, T> {
+        fn fill_buf(&mut self) -> Result<&[u8]> {
+            (**self).fill_buf()
+        }
+
+        fn consume(&mut self, amount: usize) {
+            (**self).consume(amount);
+        }
+    }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Write> Write for ReferenceMut<'_, T> {
+        fn write(&mut self, buf: &[u8]) -> Result<usize> {
+            (**self).write(buf)
+        }
+
+        fn flush(&mut self) -> Result<()> {
+            (**self).flush()
+        }
+    }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Seek> Seek for ReferenceMut<'_, T> {
+        fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+            (**self).seek(pos)
+        }
+    }
 }
 
 #[cfg(feature = "embedded-io")]
 mod embedded_io_impls {
-    use super::OwnOrBorrow;
-    use embedded_io::{ErrorType, Read, Seek, SeekFrom, Write};
+    use super::{OwnOrBorrow, ReferenceMut};
+    use embedded_io::{BufRead, ErrorType, Read, Seek, SeekFrom, Write};
 
     #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
     impl<T: ErrorType> ErrorType for OwnOrBorrow<'_, T> {
@@ -380,10 +418,57 @@ mod embedded_io_impls {
             self.borrow_mut().seek(pos)
         }
     }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: ErrorType> ErrorType for ReferenceMut<'_, T> {
+        type Error = T::Error;
+    }
+
+    /// Never panics: the borrow is already held. Use
+    /// [`OwnOrBorrow::try_borrow_mut`] to get a guard without panicking.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Read> Read for ReferenceMut<'_, T> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+            (**self).read(buf)
+        }
+    }
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: BufRead> BufRead for ReferenceMut<'_, T> {
+        fn fill_buf(&mut self) -> Result<&[u8], Self::Error> {
+            (**self).fill_buf()
+        }
+
+        fn consume(&mut self, amount: usize) {
+            (**self).consume(amount);
+        }
+    }
+
+    /// Never panics: the borrow is already held. Use
+    /// [`OwnOrBorrow::try_borrow_mut`] to get a guard without panicking.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Write> Write for ReferenceMut<'_, T> {
+        fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+            (**self).write(buf)
+        }
+
+        fn flush(&mut self) -> Result<(), Self::Error> {
+            (**self).flush()
+        }
+    }
+
+    /// Never panics: the borrow is already held. Use
+    /// [`OwnOrBorrow::try_borrow_mut`] to get a guard without panicking.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Seek> Seek for ReferenceMut<'_, T> {
+        fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
+            (**self).seek(pos)
+        }
+    }
 }
 
-/// Compiles and runs the README examples as doctests.
-#[cfg(doctest)]
+/// Compiles and runs the README examples as doctests. They use `std::io`.
+#[cfg(all(doctest, feature = "std"))]
 #[doc = include_str!("../README.md")]
 pub struct ReadmeDoctests;
 
@@ -418,19 +503,86 @@ impl<T> DerefMut for ReferenceMut<'_, T> {
     }
 }
 
-impl<T> core::borrow::Borrow<T> for Reference<'_, T> {
-    #[inline]
-    fn borrow(&self) -> &T {
-        self
-    }
+/// Implements the traits that only need `&T` for a guard type, so `Reference`
+/// and `ReferenceMut` behave the same as the value they point to.
+macro_rules! impl_shared_traits {
+    ($guard:ident) => {
+        impl<T> core::borrow::Borrow<T> for $guard<'_, T> {
+            #[inline]
+            fn borrow(&self) -> &T {
+                self
+            }
+        }
+
+        impl<T> AsRef<T> for $guard<'_, T> {
+            #[inline]
+            fn as_ref(&self) -> &T {
+                self
+            }
+        }
+
+        impl<T: fmt::Debug> fmt::Debug for $guard<'_, T> {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Debug::fmt(&**self, f)
+            }
+        }
+
+        impl<T: fmt::Display> fmt::Display for $guard<'_, T> {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Display::fmt(&**self, f)
+            }
+        }
+
+        impl<T: PartialEq> PartialEq for $guard<'_, T> {
+            #[inline]
+            fn eq(&self, other: &Self) -> bool {
+                **self == **other
+            }
+        }
+
+        impl<T: Eq> Eq for $guard<'_, T> {}
+
+        impl<T: PartialOrd> PartialOrd for $guard<'_, T> {
+            #[inline]
+            fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+                (**self).partial_cmp(&**other)
+            }
+        }
+
+        impl<T: Ord> Ord for $guard<'_, T> {
+            #[inline]
+            fn cmp(&self, other: &Self) -> Ordering {
+                (**self).cmp(&**other)
+            }
+        }
+
+        impl<T: Hash> Hash for $guard<'_, T> {
+            #[inline]
+            fn hash<H: Hasher>(&self, state: &mut H) {
+                (**self).hash(state)
+            }
+        }
+
+        #[cfg(feature = "defmt")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "defmt")))]
+        impl<T: defmt::Format> defmt::Format for $guard<'_, T> {
+            fn format(&self, fmt: defmt::Formatter) {
+                defmt::Format::format(&**self, fmt)
+            }
+        }
+
+        #[cfg(feature = "serde")]
+        #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+        impl<T: serde::Serialize> serde::Serialize for $guard<'_, T> {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                (**self).serialize(serializer)
+            }
+        }
+    };
 }
 
-impl<T> core::borrow::Borrow<T> for ReferenceMut<'_, T> {
-    #[inline]
-    fn borrow(&self) -> &T {
-        self
-    }
-}
+impl_shared_traits!(Reference);
+impl_shared_traits!(ReferenceMut);
 
 impl<T> core::borrow::BorrowMut<T> for ReferenceMut<'_, T> {
     #[inline]
@@ -439,24 +591,21 @@ impl<T> core::borrow::BorrowMut<T> for ReferenceMut<'_, T> {
     }
 }
 
-impl<T> AsRef<T> for Reference<'_, T> {
-    #[inline]
-    fn as_ref(&self) -> &T {
-        self
-    }
-}
-
-impl<T> AsRef<T> for ReferenceMut<'_, T> {
-    #[inline]
-    fn as_ref(&self) -> &T {
-        self
-    }
-}
-
 impl<T> AsMut<T> for ReferenceMut<'_, T> {
     #[inline]
     fn as_mut(&mut self) -> &mut T {
         self
+    }
+}
+
+/// Copies the reference, or adds another shared [`RefCell`] borrow.
+/// Does not need `T: Clone`.
+impl<T> Clone for Reference<'_, T> {
+    fn clone(&self) -> Self {
+        match self {
+            Reference::Borrowed(value) => Reference::Borrowed(value),
+            Reference::RefCell(guard) => Reference::RefCell(Ref::clone(guard)),
+        }
     }
 }
 
@@ -485,60 +634,6 @@ impl<'a, T> From<RefMut<'a, T>> for ReferenceMut<'a, T> {
     #[inline]
     fn from(value: RefMut<'a, T>) -> Self {
         ReferenceMut::RefCell(value)
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for Reference<'_, T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&**self, f)
-    }
-}
-
-impl<T: fmt::Display> fmt::Display for Reference<'_, T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&**self, f)
-    }
-}
-
-impl<T: fmt::Debug> fmt::Debug for ReferenceMut<'_, T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Debug::fmt(&**self, f)
-    }
-}
-
-impl<T: fmt::Display> fmt::Display for ReferenceMut<'_, T> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&**self, f)
-    }
-}
-
-impl<T: PartialEq> PartialEq for Reference<'_, T> {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        **self == **other
-    }
-}
-
-impl<T: Eq> Eq for Reference<'_, T> {}
-
-impl<T: PartialOrd> PartialOrd for Reference<'_, T> {
-    #[inline]
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        (**self).partial_cmp(&**other)
-    }
-}
-
-impl<T: Ord> Ord for Reference<'_, T> {
-    #[inline]
-    fn cmp(&self, other: &Self) -> Ordering {
-        (**self).cmp(&**other)
-    }
-}
-
-impl<T: Hash> Hash for Reference<'_, T> {
-    #[inline]
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        (**self).hash(state)
     }
 }
 
@@ -755,6 +850,57 @@ mod tests {
         assert_eq!(*reference, 7);
     }
 
+    #[test]
+    fn reference_mut_comparisons() {
+        use core::hash::BuildHasher;
+        let cell = RefCell::new(2);
+        let mut one = 1;
+        let a = ReferenceMut::from(&mut one);
+        let b = ReferenceMut::from(cell.borrow_mut());
+        assert!(a < b);
+        assert_ne!(a, b);
+        assert_eq!(a.cmp(&b), Ordering::Less);
+        let hasher = std::hash::RandomState::new();
+        assert_eq!(hasher.hash_one(&b), hasher.hash_one(2));
+    }
+
+    #[test]
+    fn reference_clone_shares_refcell_borrow() {
+        let cell = RefCell::new(42);
+        let a = Reference::from(cell.borrow());
+        let b = a.clone();
+        drop(a);
+        assert!(cell.try_borrow_mut().is_err(), "clone must keep the borrow");
+        assert_eq!(*b, 42);
+        drop(b);
+        assert!(cell.try_borrow_mut().is_ok());
+
+        let value = 7;
+        let a = Reference::from(&value);
+        assert_eq!(*a.clone(), 7);
+    }
+
+    #[test]
+    fn to_owned_clones_value_not_guard() {
+        let value = OwnOrBorrow::from(RefCell::new(42));
+        let owned: i32 = value.to_owned();
+        assert_eq!(owned, 42);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_serializes_guards() {
+        let cell = RefCell::new(42);
+        assert_eq!(
+            serde_json::to_string(&Reference::from(cell.borrow())).unwrap(),
+            "42"
+        );
+        assert_eq!(
+            serde_json::to_string(&ReferenceMut::from(cell.borrow_mut())).unwrap(),
+            "42"
+        );
+    }
+
     #[cfg(feature = "serde")]
     #[test]
     fn serde_round_trip() {
@@ -790,6 +936,24 @@ mod tests {
         let _guard = cell.borrow();
         let err = value.write(b"!").unwrap_err();
         assert_eq!(err.kind(), std::io::ErrorKind::ResourceBusy);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn std_io_on_guard() {
+        use std::io::{BufRead, Cursor, Read, Seek, SeekFrom, Write};
+        let cell = RefCell::new(Cursor::new(std::vec::Vec::new()));
+        let mut value = OwnOrBorrow::from(&cell);
+        let mut guard = value.try_borrow_mut().unwrap();
+        guard.write_all(b"one\ntwo\n").unwrap();
+        guard.flush().unwrap();
+        assert_eq!(guard.seek(SeekFrom::Start(0)).unwrap(), 0);
+        let mut line = std::string::String::new();
+        guard.read_line(&mut line).unwrap();
+        assert_eq!(line, "one\n");
+        let mut rest = std::string::String::new();
+        guard.read_to_string(&mut rest).unwrap();
+        assert_eq!(rest, "two\n");
     }
 
     #[cfg(feature = "embedded-io")]
@@ -831,6 +995,30 @@ mod tests {
         let mut value = OwnOrBorrow::from(&cell);
         assert_eq!(value.seek(SeekFrom::Start(3)), Ok(3));
         assert_eq!(cell.borrow().0, 3);
+    }
+
+    #[cfg(feature = "embedded-io")]
+    #[test]
+    fn embedded_io_on_guard() {
+        use embedded_io::{BufRead, Read, Write};
+        let mut out = [0u8; 2];
+        {
+            let cell = RefCell::new(&mut out[..]);
+            let mut value = OwnOrBorrow::from(&cell);
+            let mut guard = value.try_borrow_mut().unwrap();
+            guard.write_all(b"ok").unwrap();
+            guard.flush().unwrap();
+        }
+        assert_eq!(&out, b"ok");
+
+        let mut input: &[u8] = b"abc";
+        let mut value = OwnOrBorrow::from(&mut input);
+        let mut guard = value.borrow_mut();
+        assert_eq!(guard.fill_buf().unwrap(), b"abc");
+        guard.consume(1);
+        let mut buf = [0u8; 2];
+        guard.read_exact(&mut buf).unwrap();
+        assert_eq!(&buf, b"bc");
     }
 
     #[cfg(feature = "embedded-io")]

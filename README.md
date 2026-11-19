@@ -6,22 +6,22 @@
 [![docs.rs](https://img.shields.io/docsrs/own_or_borrow)](https://docs.rs/own-or-borrow/)
 [![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
 
-The `own-or-borrow` crate provides the `OwnOrBorrow` type, which can encapsulate owned data, a mutable reference, or a `RefCell`-borrowed reference,
-offering a flexible approach to data ownership and borrowing. This design is particularly useful in `no_std` environments,
-as it allows for dynamic borrowing without relying on the standard library.
+The `own-or-borrow` crate provides the `OwnOrBorrow` type. It holds an owned value, a `&mut T`, an owned
+`RefCell<T>` or a `&RefCell<T>`, and gives the same read and write access to all four. It works in `no_std`
+without `alloc`.
 
-In contrast, Rust's standard `Cow` (Clone on Write) type is a smart pointer that enables efficient read-only access to
-borrowed data and clones the data only when mutation is necessary. It operates with immutable references and requires the
-`ToOwned` trait to clone the data when needed.
+## Compared to `Cow` and `mayber`
 
-The key distinction between OwnOrBorrow and Cow lies in their borrowing mechanisms:
+| | `Cow<'a, B>` | [`mayber::Maybe<R, T>`](https://crates.io/crates/mayber) | `OwnOrBorrow<'a, T>` |
+|---|---|---|---|
+| Holds | `&B` or `B::Owned` | any `R` or `T` | `T`, `&mut T`, `RefCell<T>` or `&RefCell<T>` |
+| Mutable access to borrowed data | no, clones on write | with `MaybeMut` (`&mut T`) | yes, including shared `RefCell`s |
+| Requires `ToOwned` | yes | no | no |
+| `RefCell` support | no | no | yes, with `try_borrow` and `try_borrow_mut` |
+| `no_std` without `alloc` | no | yes | yes |
 
-* `OwnOrBorrow`: Utilizes `RefCell` to allow for interior mutability, enabling mutable access to borrowed data at runtime.
-  This is advantageous in scenarios where you need to mutate borrowed data without requiring ownership.
-* `Cow`: Provides immutable access to borrowed data and clones it only when a mutation is required, ensuring that data is not cloned unnecessarily.
-
-Therefore, `OwnOrBorrow` offers more flexibility in terms of mutability for borrowed data, which can be beneficial in certain
-use cases, especially in `no_std` contexts. However, this flexibility comes with the overhead of runtime borrowing checks inherent to `RefCell`.
+The price of `RefCell` support is the runtime borrow check that comes with it. `borrow` and `borrow_mut`
+panic on a conflicting `RefCell` borrow; `try_borrow` and `try_borrow_mut` return an error instead.
 
 ## Examples
 
@@ -49,22 +49,54 @@ let mut value = OwnOrBorrow::from(&refcell);
 assert_eq!(*refcell.borrow(), 43);
 ```
 
-Use `try_borrow` and `try_borrow_mut` to avoid panicking when the `RefCell` is already borrowed.
+## Trait implementations
 
-## Compared to `mayber`
+* `OwnOrBorrow<T>`: `From<&mut T>`, `From<RefCell<T>>`, `From<&RefCell<T>>`, `Default`, `Debug`,
+  `Display`, `std::io` and `embedded_io` `Read`, `Write` and `Seek`, `Serialize`, `Deserialize`,
+  `defmt::Format`. `RefCell<T>` and `&RefCell<T>` implement `TryFrom<OwnOrBorrow<T>>`.
+* `Reference<T>` (from `borrow`): `Deref`, `AsRef`, `Borrow`, `Clone`, `From<&T>`, `From<Ref<T>>`,
+  `PartialEq`, `Eq`, `PartialOrd`, `Ord`, `Hash`, `Debug`, `Display`, `Serialize`, `defmt::Format`.
+  `Clone` needs no `T: Clone`: it copies the reference or adds another shared `RefCell` borrow.
+* `ReferenceMut<T>` (from `borrow_mut`): everything `Reference` has except `Clone` and `From<&T>`,
+  plus `DerefMut`, `AsMut`, `BorrowMut`, `From<&mut T>`, `From<RefMut<T>>`, and `std::io` and
+  `embedded_io` `Read`, `BufRead`, `Write` and `Seek`.
 
-[`mayber`](https://crates.io/crates/mayber) generalizes `Cow` to `Maybe<R, T>` (borrowed `R` or owned `T`)
-without requiring `ToOwned`. It has no `RefCell` support. `own-or-borrow` focuses on mutable access
-that works the same for owned values, `&mut` references and shared `RefCell`s.
+Comparison and hashing use the inner value, so a `Reference` hashes like the `T` it points to.
+
+The I/O traits on `ReferenceMut` never fail on a borrow, because the guard already holds it. With
+`embedded-io`, take the guard with `try_borrow_mut` to avoid the panic of the `OwnOrBorrow` impls:
+
+```rust
+use core::cell::RefCell;
+use own_or_borrow::OwnOrBorrow;
+
+let cell = RefCell::new(Vec::new());
+let mut value = OwnOrBorrow::from(&cell);
+
+if let Ok(mut guard) = value.try_borrow_mut() {
+    std::io::Write::write_all(&mut guard, b"hello").unwrap();
+}
+assert_eq!(cell.borrow().as_slice(), b"hello");
+```
+
+### Not implemented
+
+* `From<T>`: it would overlap with `From<&mut T>` and `From<RefCell<T>>`. Use `OwnOrBorrow::own`.
+* `Clone` and `Copy` for `OwnOrBorrow`: a `&mut T` cannot be cloned, and cloning into an owned
+  value would silently cut the link to the original.
+* `PartialEq`, `Ord` and `Hash` for `OwnOrBorrow`: comparing would panic on a mutably borrowed
+  `RefCell`, and a key whose `RefCell` changes breaks a `HashMap`. Compare `*a.borrow() == *b.borrow()`.
+* `BufRead` for `OwnOrBorrow`: `fill_buf` returns a slice that cannot outlive the temporary
+  `RefCell` guard. Use `borrow_mut` and call it on the `ReferenceMut`.
 
 ## Crate features
 
-* `std` (default): `std::io::{Read, Write, Seek}` for `OwnOrBorrow`. A `RefCell` that is
-  already borrowed yields an `ErrorKind::ResourceBusy` error.
-* `embedded-io`: `embedded_io::{Read, Write, Seek}` (embedded-io 0.7). These panic if the
-  `RefCell` is already borrowed, because the inner error type cannot express that.
-* `serde`: `Serialize` and `Deserialize`. Serializing fails if the `RefCell` is mutably
-  borrowed; deserializing always yields an owned value.
+* `std` (default): the `std::io` traits. On `OwnOrBorrow`, a `RefCell` that is already
+  borrowed yields an `ErrorKind::ResourceBusy` error.
+* `embedded-io`: the `embedded_io` traits (embedded-io 0.7). On `OwnOrBorrow`, these panic if
+  the `RefCell` is already borrowed, because the inner error type cannot express that.
+* `serde`: `Serialize` and `Deserialize`. Serializing an `OwnOrBorrow` fails if the `RefCell` is
+  mutably borrowed; deserializing always yields an owned value.
 * `defmt`: `defmt::Format`.
 
 Disable default features for `no_std`. The crate needs no `alloc` and requires Rust 1.85 or later.

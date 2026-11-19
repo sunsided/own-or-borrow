@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- `std::io::{Read, BufRead, Write, Seek}` and `embedded_io::{Read, BufRead, Write, Seek}` for
+  `ReferenceMut`. They never fail on a borrow, so `try_borrow_mut` plus these impls gives
+  embedded-io users a path without panics.
+- `PartialEq`, `Eq`, `PartialOrd`, `Ord` and `Hash` for `ReferenceMut`, matching `Reference`.
+- `Clone` for `Reference`, without requiring `T: Clone`.
+- `Serialize` (behind `serde`) and `defmt::Format` (behind `defmt`) for `Reference` and `ReferenceMut`.
+
+### Changed
+
+- [**breaking**] `reference.clone()` on a `Reference` now returns another `Reference` instead of
+  auto-dereferencing to `T::clone`. Use `T::clone(&reference)` or `(*reference).clone()` for the value.
+
 ## [0.2.0] - 2026-11-19
 
 [0.2.0]: https://github.com/sunsided/own-or-borrow/releases/tag/v0.2.0
