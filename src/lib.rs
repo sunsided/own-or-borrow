@@ -715,6 +715,17 @@ mod tests {
     }
 
     #[test]
+    fn try_borrow_fails_on_owned_refcell_borrowed_through_variant() {
+        let value = OwnOrBorrow::from(RefCell::new(42));
+        let OwnOrBorrow::RefCell(cell) = &value else {
+            unreachable!()
+        };
+        let _guard = cell.borrow_mut();
+        assert!(value.try_borrow().is_err());
+        assert_eq!(format!("{value:?}"), "<borrowed>");
+    }
+
+    #[test]
     fn debug() {
         let value = OwnOrBorrow::from(RefCell::new(42));
         assert_eq!(format!("{value:?}"), "42");
@@ -944,8 +955,11 @@ mod tests {
         assert_eq!(&buf, b"ello");
 
         let _guard = cell.borrow();
-        let err = value.write(b"!").unwrap_err();
-        assert_eq!(err.kind(), std::io::ErrorKind::ResourceBusy);
+        let busy = std::io::ErrorKind::ResourceBusy;
+        assert_eq!(value.write(b"!").unwrap_err().kind(), busy);
+        assert_eq!(value.read(&mut buf).unwrap_err().kind(), busy);
+        assert_eq!(value.flush().unwrap_err().kind(), busy);
+        assert_eq!(value.seek(SeekFrom::Start(0)).unwrap_err().kind(), busy);
     }
 
     #[cfg(feature = "std")]
@@ -1005,6 +1019,11 @@ mod tests {
         let mut value = OwnOrBorrow::from(&cell);
         assert_eq!(value.seek(SeekFrom::Start(3)), Ok(3));
         assert_eq!(cell.borrow().0, 3);
+        assert_eq!(value.seek(SeekFrom::End(0)), Err(ErrorKind::Unsupported));
+        assert_eq!(
+            value.borrow_mut().seek(SeekFrom::End(0)),
+            Err(ErrorKind::Unsupported)
+        );
     }
 
     #[cfg(feature = "embedded-io")]
