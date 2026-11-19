@@ -33,7 +33,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [**breaking**] `try_into_owned` now succeeds for the owned `RefCell` variant.
 - [**breaking**] Removed `TryIntoError`.
 - [**breaking**] Removed the never-constructed `Reference::RefCellRef` and `ReferenceMut::RefCellRef` variants.
-- [**breaking**] Bumped `defmt` to 1.x.
+- [**breaking**] Bumped `defmt` to 1.2.
 - `Debug`, `Display` and `defmt::Format` print `<borrowed>` instead of panicking when the
   `RefCell` is mutably borrowed.
 - The crate is now always `#![no_std]`. The `std` feature links `std` only for the `std::io` impls.
