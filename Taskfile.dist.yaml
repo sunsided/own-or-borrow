@@ -73,6 +73,9 @@ tasks:
 
   lint:fix:
     desc: Auto-fix clippy findings and typos, then format (review the diff)
+    preconditions:
+      - sh: command -v typos
+        msg: "typos not found - cargo install --locked typos-cli"
     cmds:
       - cargo clippy --workspace --all-targets --all-features --fix --allow-dirty --allow-staged
       - typos --write-changes
