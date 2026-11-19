@@ -43,7 +43,7 @@
 //! ```
 
 #![no_std]
-#![deny(unsafe_code)]
+#![forbid(unsafe_code)]
 // Enables the `doc_cfg` feature when the `docsrs` configuration attribute is defined.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 

@@ -5,6 +5,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/sunsided/own-or-borrow/rust.yml)
 [![docs.rs](https://img.shields.io/docsrs/own_or_borrow)](https://docs.rs/own-or-borrow/)
 [![codecov](https://codecov.io/gh/sunsided/own-or-borrow/graph/badge.svg?token=fYfqdDz6se)](https://codecov.io/gh/sunsided/own-or-borrow)
+[![Safety Dance](https://img.shields.io/badge/unsafe-forbidden-success.svg)](https://github.com/rust-secure-code/safety-dance/)
 
 The `own-or-borrow` crate provides the `OwnOrBorrow` type. It holds an owned value, a `&mut T`, an owned
 `RefCell<T>` or a `&RefCell<T>`, and gives the same read and write access to all four. It works in `no_std`
