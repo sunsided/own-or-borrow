@@ -18,5 +18,6 @@ applyTo: "Cargo.toml,release-plz.toml,.github/workflows/release-plz.yml,.github/
 - release-plz runs in git-only mode: it tags `vX.Y.Z` and creates GitHub Releases.
   `publish-crates-io.yml` publishes from the tag in the `crates-io` environment, via trusted
   publishing (`id-token: write`, no `CARGO_REGISTRY_TOKEN`). Keep it that way.
-- Changelog groups and minor bumps come from imperative subject verbs (`release-plz.toml`).
+- Changelog groups come from imperative subject verbs (`release-plz.toml`). While the crate is
+  0.x, compatible changes are patch releases; only API breaks bump the minor.
   A subject that hides a feature behind "Update ..." lands under Changed. Flag it.
