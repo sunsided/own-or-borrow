@@ -794,6 +794,7 @@ mod tests {
         let mut out = [0u8; 5];
         let mut value = OwnOrBorrow::own(&mut out[..]);
         value.write_all(b"hello").unwrap();
+        value.flush().unwrap();
         assert_eq!(&out, b"hello");
 
         let mut input: &[u8] = b"hi";
@@ -801,5 +802,41 @@ mod tests {
         let mut buf = [0u8; 2];
         value.read_exact(&mut buf).unwrap();
         assert_eq!(&buf, b"hi");
+    }
+
+    #[cfg(feature = "embedded-io")]
+    #[test]
+    fn embedded_io_seek_forwards() {
+        use embedded_io::{ErrorKind, ErrorType, Seek, SeekFrom};
+        struct Position(u64);
+        impl ErrorType for Position {
+            type Error = ErrorKind;
+        }
+        impl Seek for Position {
+            fn seek(&mut self, pos: SeekFrom) -> Result<u64, ErrorKind> {
+                match pos {
+                    SeekFrom::Start(n) => self.0 = n,
+                    _ => return Err(ErrorKind::Unsupported),
+                }
+                Ok(self.0)
+            }
+        }
+
+        let cell = RefCell::new(Position(0));
+        let mut value = OwnOrBorrow::from(&cell);
+        assert_eq!(value.seek(SeekFrom::Start(3)), Ok(3));
+        assert_eq!(cell.borrow().0, 3);
+    }
+
+    #[cfg(feature = "embedded-io")]
+    #[test]
+    #[should_panic(expected = "already borrowed")]
+    fn embedded_io_panics_while_borrowed() {
+        use embedded_io::Write;
+        let mut out = [0u8; 1];
+        let cell = RefCell::new(&mut out[..]);
+        let mut value = OwnOrBorrow::from(&cell);
+        let _guard = cell.borrow();
+        let _ = value.write(b"!");
     }
 }
