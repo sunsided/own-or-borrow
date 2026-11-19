@@ -5,10 +5,14 @@
 //!
 //! ## `no_std`
 //!
-//! The crate is always `no_std` and does not require `alloc`. The `std` feature is kept
-//! for backwards compatibility only and has no effect.
+//! The crate does not require `alloc`. Disable the default `std` feature to use it in a
+//! `no_std` context.
 //!
 //! ## Crate features
+//! * `std` (default) - Implements the `std::io` traits `Read`, `Write` and `Seek`.
+//! * `embedded-io` - Implements the [embedded-io](https://crates.io/crates/embedded-io) traits
+//!   `Read`, `Write` and `Seek`.
+//! * `serde` - Implements `Serialize` and `Deserialize` via [serde](https://crates.io/crates/serde).
 //! * `defmt` - Enables deferred formatting support via the [defmt](https://crates.io/crates/defmt) crate.
 //!
 //! ## Examples
@@ -43,7 +47,7 @@
 // Enables the `doc_cfg` feature when the `docsrs` configuration attribute is defined.
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
-#[cfg(test)]
+#[cfg(any(feature = "std", test))]
 extern crate std;
 
 use core::cell::{BorrowError, BorrowMutError, Ref, RefCell, RefMut};
@@ -259,6 +263,115 @@ impl<T: defmt::Format> defmt::Format for OwnOrBorrow<'_, T> {
         match self.try_borrow() {
             Ok(value) => defmt::Format::format(&*value, fmt),
             Err(_) => defmt::write!(fmt, "<borrowed>"),
+        }
+    }
+}
+
+/// Serializes the value, failing if it is behind a mutably borrowed [`RefCell`].
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<T: serde::Serialize> serde::Serialize for OwnOrBorrow<'_, T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.try_borrow()
+            .map_err(serde::ser::Error::custom)?
+            .serialize(serializer)
+    }
+}
+
+/// Deserializes into [`OwnOrBorrow::Owned`].
+#[cfg(feature = "serde")]
+#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
+impl<'de, T: serde::Deserialize<'de>> serde::Deserialize<'de> for OwnOrBorrow<'_, T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        T::deserialize(deserializer).map(Self::Owned)
+    }
+}
+
+#[cfg(feature = "std")]
+mod std_io {
+    use super::{OwnOrBorrow, ReferenceMut};
+    use std::io::{Error, ErrorKind, Read, Result, Seek, SeekFrom, Write};
+
+    impl<T> OwnOrBorrow<'_, T> {
+        fn io(&mut self) -> Result<ReferenceMut<'_, T>> {
+            self.try_borrow_mut()
+                .map_err(|e| Error::new(ErrorKind::ResourceBusy, e))
+        }
+    }
+
+    /// Fails with [`ErrorKind::ResourceBusy`] if the value is behind a [`RefCell`](core::cell::RefCell)
+    /// that is already borrowed.
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Read> Read for OwnOrBorrow<'_, T> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+            self.io()?.read(buf)
+        }
+    }
+
+    /// Fails with [`ErrorKind::ResourceBusy`] if the value is behind a [`RefCell`](core::cell::RefCell)
+    /// that is already borrowed.
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Write> Write for OwnOrBorrow<'_, T> {
+        fn write(&mut self, buf: &[u8]) -> Result<usize> {
+            self.io()?.write(buf)
+        }
+
+        fn flush(&mut self) -> Result<()> {
+            self.io()?.flush()
+        }
+    }
+
+    /// Fails with [`ErrorKind::ResourceBusy`] if the value is behind a [`RefCell`](core::cell::RefCell)
+    /// that is already borrowed.
+    #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
+    impl<T: Seek> Seek for OwnOrBorrow<'_, T> {
+        fn seek(&mut self, pos: SeekFrom) -> Result<u64> {
+            self.io()?.seek(pos)
+        }
+    }
+}
+
+#[cfg(feature = "embedded-io")]
+mod embedded_io_impls {
+    use super::OwnOrBorrow;
+    use embedded_io::{ErrorType, Read, Seek, SeekFrom, Write};
+
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: ErrorType> ErrorType for OwnOrBorrow<'_, T> {
+        type Error = T::Error;
+    }
+
+    /// # Panics
+    /// Panics if the value is behind a [`RefCell`](core::cell::RefCell) that is already borrowed,
+    /// because the inner error type cannot express that.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Read> Read for OwnOrBorrow<'_, T> {
+        fn read(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
+            self.borrow_mut().read(buf)
+        }
+    }
+
+    /// # Panics
+    /// Panics if the value is behind a [`RefCell`](core::cell::RefCell) that is already borrowed,
+    /// because the inner error type cannot express that.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Write> Write for OwnOrBorrow<'_, T> {
+        fn write(&mut self, buf: &[u8]) -> Result<usize, Self::Error> {
+            self.borrow_mut().write(buf)
+        }
+
+        fn flush(&mut self) -> Result<(), Self::Error> {
+            self.borrow_mut().flush()
+        }
+    }
+
+    /// # Panics
+    /// Panics if the value is behind a [`RefCell`](core::cell::RefCell) that is already borrowed,
+    /// because the inner error type cannot express that.
+    #[cfg_attr(docsrs, doc(cfg(feature = "embedded-io")))]
+    impl<T: Seek> Seek for OwnOrBorrow<'_, T> {
+        fn seek(&mut self, pos: SeekFrom) -> Result<u64, Self::Error> {
+            self.borrow_mut().seek(pos)
         }
     }
 }
@@ -629,5 +742,58 @@ mod tests {
         let mut value = 7;
         let reference = ReferenceMut::from(&mut value);
         assert_eq!(*reference, 7);
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_round_trip() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(&cell);
+        assert_eq!(serde_json::to_string(&value).unwrap(), "42");
+        let value: OwnOrBorrow<'_, i32> = serde_json::from_str("7").unwrap();
+        assert!(matches!(value, OwnOrBorrow::Owned(7)));
+    }
+
+    #[cfg(feature = "serde")]
+    #[test]
+    fn serde_fails_while_mutably_borrowed() {
+        let cell = RefCell::new(42);
+        let value = OwnOrBorrow::from(&cell);
+        let _guard = cell.borrow_mut();
+        assert!(serde_json::to_string(&value).is_err());
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn std_io_forwards_and_reports_busy() {
+        use std::io::{Cursor, Read, Seek, SeekFrom, Write};
+        let cell = RefCell::new(Cursor::new(std::vec::Vec::new()));
+        let mut value = OwnOrBorrow::from(&cell);
+        value.write_all(b"hello").unwrap();
+        value.flush().unwrap();
+        assert_eq!(value.seek(SeekFrom::Start(1)).unwrap(), 1);
+        let mut buf = [0; 4];
+        value.read_exact(&mut buf).unwrap();
+        assert_eq!(&buf, b"ello");
+
+        let _guard = cell.borrow();
+        let err = value.write(b"!").unwrap_err();
+        assert_eq!(err.kind(), std::io::ErrorKind::ResourceBusy);
+    }
+
+    #[cfg(feature = "embedded-io")]
+    #[test]
+    fn embedded_io_forwards() {
+        use embedded_io::{Read, Write};
+        let mut out = [0u8; 5];
+        let mut value = OwnOrBorrow::own(&mut out[..]);
+        value.write_all(b"hello").unwrap();
+        assert_eq!(&out, b"hello");
+
+        let mut input: &[u8] = b"hi";
+        let mut value = OwnOrBorrow::from(&mut input);
+        let mut buf = [0u8; 2];
+        value.read_exact(&mut buf).unwrap();
+        assert_eq!(&buf, b"hi");
     }
 }

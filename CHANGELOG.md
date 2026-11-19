@@ -15,6 +15,12 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Default` for `OwnOrBorrow`.
 - `Debug` and `Display` for `Reference` and `ReferenceMut`.
 - `PartialEq`, `Eq`, `PartialOrd`, `Ord` and `Hash` for `Reference`.
+- `std::io::{Read, Write, Seek}` for `OwnOrBorrow` behind the default `std` feature.
+  A `RefCell` that is already borrowed yields an `ErrorKind::ResourceBusy` error.
+- `embedded_io::{Read, Write, Seek}` (embedded-io 0.7) for `OwnOrBorrow` behind the
+  `embedded-io` feature. These panic if the `RefCell` is already borrowed.
+- `Serialize` and `Deserialize` for `OwnOrBorrow` behind the `serde` feature.
+  Serializing fails if the `RefCell` is mutably borrowed; deserializing yields `Owned`.
 
 ### Changed
 
@@ -30,7 +36,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [**breaking**] Bumped `defmt` to 1.x.
 - `Debug`, `Display` and `defmt::Format` print `<borrowed>` instead of panicking when the
   `RefCell` is mutably borrowed.
-- The crate is now always `no_std`. The `std` feature has no effect and is kept for compatibility.
+- The crate is now always `#![no_std]`. The `std` feature links `std` only for the `std::io` impls.
 - Updated to edition 2024. MSRV is now Rust 1.85.
 
 ## [0.1.1] - 2024-12-02
