@@ -92,11 +92,17 @@ impl<'a, T> OwnOrBorrow<'a, T> {
     }
 
     /// Returns `true` if the value is owned, either directly or in an owned [`RefCell`].
+    ///
+    /// This checks the variant only, not whether a [`RefCell`] is currently borrowed.
+    /// Use [`try_borrow`](Self::try_borrow) or [`try_borrow_mut`](Self::try_borrow_mut) for that.
     pub const fn is_owned(&self) -> bool {
         matches!(self, Self::Owned(_) | Self::RefCell(_))
     }
 
-    /// Returns `true` if the value is borrowed.
+    /// Returns `true` if the value is a `&mut T` or a `&RefCell<T>`.
+    ///
+    /// This checks the variant only, not whether a [`RefCell`] is currently borrowed.
+    /// An owned [`RefCell`] with an active borrow guard still returns `false`.
     pub const fn is_borrowed(&self) -> bool {
         !self.is_owned()
     }
