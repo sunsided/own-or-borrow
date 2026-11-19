@@ -3,6 +3,28 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/sunsided/own-or-borrow/compare/v0.3.0...v0.3.1) - 2026-11-19
+
+### Added
+
+- Add CONTRIBUTING.md for GitHub Flow and release-plz
+- Add Copilot review instructions for CI, docs, releases and Rust
+- Add prek hooks for fast checks and the commit subject
+- Add cargo-deny and group Dependabot updates
+- Add Taskfile and replace rust.yml with a hardened CI
+
+### Changed
+
+- Ship only the crate's own files and declare the README
+- Check the MSRV with all features
+- Document the private I/O modules and the io helper
+- Move the integration tests to tests/it/main.rs
+- Extend the lint table and add clippy.toml and rustfmt.toml
+- Automate releases with release-plz and trusted publishing
+- Align crate keywords and update README badges
+- Move license texts to LICENSES/ and make the repo REUSE-compliant
+- Upload coverage with OIDC and add codecov.yml
+
 ## [0.3.0] - 2026-11-19
 
 [0.3.0]: https://github.com/sunsided/own-or-borrow/releases/tag/v0.3.0
