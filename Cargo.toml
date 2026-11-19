@@ -9,6 +9,9 @@ repository = "https://github.com/sunsided/own-or-borrow"
 license = "EUPL-1.2 OR MPL-2.0"
 edition = "2024"
 rust-version = "1.85"
+readme = "README.md"
+# Only what users of the crate need; CI, hooks and review config stay in the repo.
+include = ["src/**", "tests/**", "LICENSES/*", "README.md", "CHANGELOG.md"]
 
 [features]
 default = ["std"]
