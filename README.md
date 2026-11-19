@@ -67,7 +67,8 @@ that works the same for owned values, `&mut` references and shared `RefCell`s.
   already borrowed yields an `ErrorKind::ResourceBusy` error.
 * `embedded-io`: `embedded_io::{Read, Write, Seek}` (embedded-io 0.7). These panic if the
   `RefCell` is already borrowed, because the inner error type cannot express that.
-* `serde`: `Serialize` and `Deserialize`. Deserializing always yields an owned value.
+* `serde`: `Serialize` and `Deserialize`. Serializing fails if the `RefCell` is mutably
+  borrowed; deserializing always yields an owned value.
 * `defmt`: `defmt::Format`.
 
 Disable default features for `no_std`. The crate needs no `alloc` and requires Rust 1.85 or later.
