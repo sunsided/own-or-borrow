@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1](https://github.com/sunsided/own-or-borrow/compare/v0.3.0...v0.3.1) - 2026-11-19
+
+### Changed
+
+- The license texts moved to `LICENSES/EUPL-1.2.txt` and `LICENSES/MPL-2.0.txt`, verbatim from
+  SPDX, and the repository is REUSE-compliant. The license itself is unchanged:
+  `EUPL-1.2 OR MPL-2.0`.
+- The published package only contains the sources, tests, README, changelog and license texts.
+  CI, hook and review configuration stay in the repository.
+- The crates.io keywords are now `refcell`, `borrow`, `cow`, `no-std` and `embedded`.
+
+### Internal
+
+- CI, release automation (release-plz and crates.io trusted publishing), cargo-deny, prek
+  hooks, a stricter lint table and contributor docs. No API or behavior changes.
+
 ## [0.3.0] - 2026-11-19
 
 [0.3.0]: https://github.com/sunsided/own-or-borrow/releases/tag/v0.3.0
