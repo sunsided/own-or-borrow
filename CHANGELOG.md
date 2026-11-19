@@ -16,6 +16,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Changed
 
+- The crate is now licensed under `EUPL-1.2 OR MPL-2.0`, at your option. Previously it was `EUPL-1.2` only.
 - [**breaking**] `reference.clone()` on a `Reference` now returns another `Reference` instead of
   auto-dereferencing to `T::clone`. Use `T::clone(&reference)` or `(*reference).clone()` for the value.
 

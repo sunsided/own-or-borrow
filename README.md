@@ -100,3 +100,12 @@ assert_eq!(cell.borrow().as_slice(), b"hello");
 * `defmt`: `defmt::Format`.
 
 Disable default features for `no_std`. The crate needs no `alloc` and requires Rust 1.85 or later.
+
+## License
+
+Licensed under either of
+
+* European Union Public Licence 1.2 ([LICENSE-EUPL.md](LICENSE-EUPL.md))
+* Mozilla Public License 2.0 ([LICENSE-MPL](LICENSE-MPL))
+
+at your option.

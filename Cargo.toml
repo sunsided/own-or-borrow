@@ -6,7 +6,7 @@ version = "0.2.0"
 categories = ["no-std", "no-std::no-alloc", "embedded"]
 keywords = ["refcell", "embedded"]
 repository = "https://github.com/sunsided/own-or-borrow"
-license = "EUPL-1.2"
+license = "EUPL-1.2 OR MPL-2.0"
 edition = "2024"
 rust-version = "1.85"
 
