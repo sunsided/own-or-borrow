@@ -17,7 +17,7 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Internal
 
 - CI, release automation (release-plz and crates.io trusted publishing), cargo-deny, prek
-  hooks, a stricter lint table and contributor docs. No code changes.
+  hooks, a stricter lint table and contributor docs. No API or behavior changes.
 
 ## [0.3.0] - 2026-11-19
 
