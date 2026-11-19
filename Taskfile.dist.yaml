@@ -140,7 +140,7 @@ tasks:
       - sh: cargo hack --version
         msg: "cargo-hack not found - cargo install --locked cargo-hack"
     cmds:
-      - cargo hack check --rust-version --workspace --all-targets --ignore-private
+      - cargo hack check --rust-version --workspace --all-targets --all-features --ignore-private
 
   semver:
     desc: Check published library crates for semver violations
