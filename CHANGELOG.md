@@ -19,6 +19,10 @@ This project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [**breaking**] `reference.clone()` on a `Reference` now returns another `Reference` instead of
   auto-dereferencing to `T::clone`. Use `T::clone(&reference)` or `(*reference).clone()` for the value.
 
+### Internal
+
+- Enabled `clippy::pedantic`.
+
 ## [0.2.0] - 2026-11-19
 
 [0.2.0]: https://github.com/sunsided/own-or-borrow/releases/tag/v0.2.0

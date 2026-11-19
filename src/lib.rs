@@ -85,7 +85,7 @@ pub enum ReferenceMut<'a, T> {
     RefCell(RefMut<'a, T>),
 }
 
-impl<'a, T> OwnOrBorrow<'a, T> {
+impl<T> OwnOrBorrow<'_, T> {
     /// Initializes a new instance that owns data.
     pub const fn own(value: T) -> Self {
         Self::Owned(value)
@@ -122,6 +122,9 @@ impl<'a, T> OwnOrBorrow<'a, T> {
     }
 
     /// Borrows the inner value, failing if it is behind a mutably borrowed [`RefCell`].
+    ///
+    /// # Errors
+    /// Returns [`BorrowError`] if the value is behind a [`RefCell`] that is currently mutably borrowed.
     pub fn try_borrow(&self) -> Result<Reference<'_, T>, BorrowError> {
         Ok(match self {
             Self::Owned(value) => Reference::Borrowed(value),
@@ -146,6 +149,9 @@ impl<'a, T> OwnOrBorrow<'a, T> {
     }
 
     /// Borrows the inner value mutably, failing if it is behind a borrowed [`RefCell`].
+    ///
+    /// # Errors
+    /// Returns [`BorrowMutError`] if the value is behind a [`RefCell`] that is currently borrowed.
     pub fn try_borrow_mut(&mut self) -> Result<ReferenceMut<'_, T>, BorrowMutError> {
         Ok(match self {
             Self::Owned(value) => ReferenceMut::Borrowed(value),
@@ -156,6 +162,9 @@ impl<'a, T> OwnOrBorrow<'a, T> {
     }
 
     /// Returns the owned value, or `self` if the value is borrowed.
+    ///
+    /// # Errors
+    /// Returns the unchanged `self` for the `Borrowed` and `RefCellRef` variants.
     pub fn try_into_owned(self) -> Result<T, Self> {
         match self {
             Self::Owned(value) => Ok(value),
@@ -266,9 +275,10 @@ impl<T: fmt::Display> fmt::Display for OwnOrBorrow<'_, T> {
 #[cfg_attr(docsrs, doc(cfg(feature = "defmt")))]
 impl<T: defmt::Format> defmt::Format for OwnOrBorrow<'_, T> {
     fn format(&self, fmt: defmt::Formatter) {
-        match self.try_borrow() {
-            Ok(value) => defmt::Format::format(&*value, fmt),
-            Err(_) => defmt::write!(fmt, "<borrowed>"),
+        if let Ok(value) = self.try_borrow() {
+            defmt::Format::format(&*value, fmt);
+        } else {
+            defmt::write!(fmt, "<borrowed>");
         }
     }
 }
@@ -707,7 +717,7 @@ mod tests {
     #[test]
     fn debug() {
         let value = OwnOrBorrow::from(RefCell::new(42));
-        assert_eq!(format!("{:?}", value), "42");
+        assert_eq!(format!("{value:?}"), "42");
     }
 
     #[test]
@@ -715,20 +725,20 @@ mod tests {
         let cell = RefCell::new(42);
         let value = OwnOrBorrow::from(&cell);
         let _guard = cell.borrow_mut();
-        assert_eq!(format!("{:?}", value), "<borrowed>");
-        assert_eq!(format!("{}", value), "<borrowed>");
+        assert_eq!(format!("{value:?}"), "<borrowed>");
+        assert_eq!(format!("{value}"), "<borrowed>");
     }
 
     #[test]
     fn display() {
         let value = OwnOrBorrow::from(RefCell::new(42));
-        assert_eq!(format!("{}", value), "42");
+        assert_eq!(format!("{value}"), "42");
         assert_eq!(format!("{}", value.borrow()), "42");
     }
 
     #[test]
     fn default_is_owned() {
-        let value: OwnOrBorrow<'_, i32> = Default::default();
+        let value: OwnOrBorrow<'_, i32> = OwnOrBorrow::default();
         assert!(value.is_owned());
         assert_eq!(value.try_into_owned().ok(), Some(0));
     }
@@ -835,14 +845,14 @@ mod tests {
         let cell = RefCell::new(42);
         let reference = Reference::from(cell.borrow());
         assert_eq!(*Borrow::<i32>::borrow(&reference), 42);
-        assert_eq!(format!("{:?}", reference), "42");
+        assert_eq!(format!("{reference:?}"), "42");
         drop(reference);
 
         let mut reference = ReferenceMut::from(cell.borrow_mut());
         *BorrowMut::<i32>::borrow_mut(&mut reference) += 1;
         assert_eq!(*Borrow::<i32>::borrow(&reference), 43);
         assert_eq!(reference.as_ref(), &43);
-        assert_eq!(format!("{:?} {}", reference, reference), "43 43");
+        assert_eq!(format!("{reference:?} {reference}"), "43 43");
         drop(reference);
 
         let mut value = 7;
